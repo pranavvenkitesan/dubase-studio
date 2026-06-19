@@ -628,6 +628,29 @@
       aspect-ratio: auto;
     }
 
+    .am-live .am-stage.am-faux-fs {
+      position: fixed;
+      inset: 0;
+      z-index: 9999;
+      margin: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      border: 0;
+      border-radius: 0;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .am-live .am-stage.am-faux-fs .am-viewport {
+      flex: 1;
+      aspect-ratio: auto;
+    }
+
+    body.fs-lock {
+      overflow: hidden;
+    }
+
     @media (max-width:991px) {
       .am-live .am-grid {
         grid-template-columns: 1fr;
@@ -690,23 +713,35 @@
         }
         if (poster) poster.addEventListener('click', loadFrame);
 
+        var canNative = !!(stage.requestFullscreen || stage.webkitRequestFullscreen);
         function fsEl() { return document.fullscreenElement || document.webkitFullscreenElement; }
+        function setLabel(on) { if (fsLabel) fsLabel.textContent = on ? 'Exit' : 'Fullscreen'; }
+        function isOn() { return canNative ? !!fsEl() : stage.classList.contains('am-faux-fs'); }
         function enterFS() {
-          if (stage.requestFullscreen) stage.requestFullscreen();
-          else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+          if (canNative) {
+            if (stage.requestFullscreen) stage.requestFullscreen();
+            else if (stage.webkitRequestFullscreen) stage.webkitRequestFullscreen();
+          } else {
+            stage.classList.add('am-faux-fs');
+            document.body.classList.add('fs-lock');
+            setLabel(true);
+          }
         }
         function exitFS() {
-          if (document.exitFullscreen) document.exitFullscreen();
-          else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          if (canNative) {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+          } else {
+            stage.classList.remove('am-faux-fs');
+            document.body.classList.remove('fs-lock');
+            setLabel(false);
+          }
         }
         if (fsBtn) fsBtn.addEventListener('click', function () {
           loadFrame();
-          if (fsEl()) exitFS(); else enterFS();
+          if (isOn()) exitFS(); else enterFS();
         });
-        function onFsChange() {
-          var on = !!fsEl();
-          if (fsLabel) fsLabel.textContent = on ? 'Exit' : 'Fullscreen';
-        }
+        function onFsChange() { setLabel(!!fsEl()); }
         document.addEventListener('fullscreenchange', onFsChange);
         document.addEventListener('webkitfullscreenchange', onFsChange);
 
